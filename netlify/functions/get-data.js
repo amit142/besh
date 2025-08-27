@@ -1,44 +1,44 @@
-const { Octokit } = require("@octokit/rest");
-
 exports.handler = async function(event, context) {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
-  });
-
   const owner = 'amit142';
   const repo = 'besh';
   const path = 'data.json';
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   try {
-    const response = await octokit.repos.getContent({
-      owner,
-      repo,
-      path,
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
     });
 
-    const content = Buffer.from(response.data.content, 'base64').toString('utf8');
+    if (!response.ok) {
+      if (response.status === 404) {
+        const defaultData = {
+          version: 1,
+          players: {},
+          tournaments: [],
+          settings: { points: { win: 1, mars: 2 } },
+          activeTournamentId: null
+        };
+        return {
+          statusCode: 200,
+          body: JSON.stringify(defaultData)
+        };
+      }
+      throw new Error(`GitHub API responded with ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = Buffer.from(data.content, 'base64').toString('utf8');
 
     return {
       statusCode: 200,
       body: content,
     };
   } catch (error) {
-    if (error.status === 404) {
-      // If the file doesn't exist, return a default structure
-      const defaultData = {
-        version: 1,
-        players: {},
-        tournaments: [],
-        settings: { points: { win: 1, mars: 2 } },
-        activeTournamentId: null
-      };
-      return {
-        statusCode: 200,
-        body: JSON.stringify(defaultData)
-      };
-    }
     return {
-      statusCode: error.status || 500,
+      statusCode: 500,
       body: JSON.stringify({ error: error.message }),
     };
   }

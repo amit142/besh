@@ -2,9 +2,6 @@
   "name": "backgammon-tournament-manager",
   "version": "1.0.0",
   "description": "Hebrew RTL backgammon tournament management web application",
-  "dependencies": {
-    "@octokit/rest": "^20.0.2"
-  },
   "keywords": [
     "backgammon",
     "tournament",
