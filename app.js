@@ -120,7 +120,8 @@ function bindUI() {
 
 async function loadDataFromServer() {
   try {
-    const response = await fetch('/get-data');
+    const response = await fetch('/api/get-data');
+    console.log(response);
     if (response.ok) {
       const json = await response.json();
       data = json;
