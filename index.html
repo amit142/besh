@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מנהל טורנירי שש בש</title>
+
+  <!-- Fonts and Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css?v=5" />
+</head>
+<body>
+  <main class="container">
+    <header class="page-header">
+      <h1>מנהל טורנירי שש בש</h1>
+    </header>
+
+    <!-- Top utility bar -->
+    <section class="topbar" aria-label="סרגל כלים">
+      <!-- Top bar can be used for global actions in the future -->
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="dashboard" aria-label="מסך ראשי">
+      <div class="card" id="managePlayersCard">
+        <div class="card-icon"><i data-feather="users" aria-hidden="true"></i></div>
+        <h2>ניהול שחקנים</h2>
+        <p>הוספה, עריכה ומחיקה של שחקנים</p>
+        <button class="btn primary" data-action="open-players" aria-haspopup="dialog">פתח</button>
+      </div>
+
+      <div class="card" id="createTournamentCard">
+        <div class="card-icon"><i data-feather="award" aria-hidden="true"></i></div>
+        <h2>צור טורניר חדש</h2>
+        <p>הגדרת שחקנים, בחירת פורמט והתחלה מיידית</p>
+        <button class="btn primary" data-action="open-tournament" aria-haspopup="dialog">צור</button>
+      </div>
+
+      <div class="card" id="archiveCard">
+        <div class="card-icon"><i data-feather="archive" aria-hidden="true"></i></div>
+        <h2>ארכיון טורנירים</h2>
+        <p>צפייה בטורנירים שהסתיימו</p>
+        <button class="btn primary" data-action="open-archive" aria-haspopup="dialog">פתח</button>
+      </div>
+
+      <div class="card" id="liveTournamentsCard">
+        <div class="card-icon"><i data-feather="activity" aria-hidden="true"></i></div>
+        <h2>טורנירים פעילים</h2>
+        <p>צפייה ועדכון של טורנירים שמתקיימים כעת</p>
+        <button class="btn primary" data-action="open-live-tournaments" aria-haspopup="dialog">צפה</button>
+      </div>
+    </section>
+
+    <!-- Manage Players Modal -->
+    <div id="playersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="playersModalTitle" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h3 id="playersModalTitle">ניהול שחקנים</h3>
+          <button class="modal-close" data-action="close-players" aria-label="סגור חלון">×</button>
+        </header>
+        <form id="formAddPlayer" class="form">
+          <label for="playerName">שם שחקן חדש</label>
+          <input id="playerName" type="text" placeholder="הכנס שם" required />
+          <button class="btn primary" type="submit">הוסף</button>
+        </form>
+        <ul id="playersList" class="checklist" aria-label="רשימת שחקנים"></ul>
+      </div>
+    </div>
+
+    <!-- Create Tournament Modal -->
+    <div id="tournamentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tournamentModalTitle" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h3 id="tournamentModalTitle">צור טורניר חדש</h3>
+          <button class="modal-close" data-action="close-tournament" aria-label="סגור חלון">×</button>
+        </header>
+        <form id="formNewTournament" class="form">
+          <label for="tournamentName">שם הטורניר</label>
+          <input id="tournamentName" type="text" placeholder="הכנס שם" required />
+
+          <label>בחר פורמט</label>
+          <div class="radio-group" role="radiogroup" aria-label="סוג טורניר">
+            <label><input type="radio" name="type" value="round_robin" checked /> ליגה</label>
+            <label><input type="radio" name="type" value="single_elim" /> נוקאאוט</label>
+            <label><input type="radio" name="type" value="double_elim" /> נוקאאוט כפול</label>
+          </div>
+
+          <label>בחר שחקנים</label>
+          <ul id="participantsList" class="checklist" aria-label="רשימת משתתפים"></ul>
+
+          <button class="btn primary" type="submit">צור טורניר</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Archive Modal (list of past tournaments) -->
+    <div id="archiveModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="archiveModalTitle" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h3 id="archiveModalTitle">ארכיון טורנירים</h3>
+          <button class="modal-close" data-action="close-archive" aria-label="סגור חלון">×</button>
+        </header>
+        <ul id="pastTournaments" class="checklist" aria-label="טורנירים שהסתיימו"></ul>
+      </div>
+    </div>
+
+    <!-- Past Tournament Details Modal -->
+    <div id="pastTournamentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pastTournamentTitle" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h3 id="pastTournamentTitle">פרטי טורניר</h3>
+          <button class="modal-close" data-action="close-past" aria-label="סגור חלון">×</button>
+        </header>
+        <div id="pastTournamentBody"></div>
+      </div>
+    </div>
+
+    <!-- Live Tournament View -->
+    <section id="liveView" class="live-view hidden" aria-label="תצוגה חיה של הטורניר">
+      <header class="live-header">
+        <h2 id="activeTournamentTitle" aria-live="polite"></h2>
+        <button class="btn secondary" id="btnCloseTournament">סיים</button>
+      </header>
+
+      <div class="backgammon-board" aria-hidden="true">
+        <div class="board-half">
+            <div class="points-row top">
+                <div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div>
+            </div>
+            <div class="points-row bottom">
+                <div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div>
+            </div>
+        </div>
+        <div class="bar"></div>
+        <div class="board-half">
+            <div class="points-row top">
+                <div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div>
+            </div>
+            <div class="points-row bottom">
+                <div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div><div class="point odd"></div><div class="point even"></div>
+            </div>
+        </div>
+      </div>
+
+      <div class="live-body">
+        <div class="panel scoreboard-panel">
+          <h3>טבלת ניקוד</h3>
+          <table id="scoreboardTable" class="scoreboard">
+            <thead>
+              <tr>
+                <th data-sort="name">שם</th>
+                <th data-sort="wins">נצחונות</th>
+                <th data-sort="losses">הפסדים</th>
+                <th data-sort="marsWins">מרסים</th>
+                <th data-sort="points">נקודות</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel matches-panel">
+          <h3>משחקים פעילים</h3>
+          <div id="matchesContainer" aria-live="polite"></div>
+        </div>
+
+        <div class="panel bracket-panel" id="bracketPanel">
+          <h3>בראקט</h3>
+          <div id="bracketContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Winner Modal -->
+    <div id="winnerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="winnerModalTitle" aria-hidden="true">
+      <div class="modal-content text-center">
+        <canvas id="confettiCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></canvas>
+        <div style="position: relative; z-index: 1;">
+          <header>
+            <h3 id="winnerModalTitle">הטורניר הסתיים!</h3>
+          </header>
+          <div class="winner-announcement">
+            <h2>המנצח הוא</h2>
+            <h1 id="winnerName"></h1>
+          </div>
+          <button class="btn primary" data-action="close-winner">סגור</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Tournaments Modal -->
+    <div id="liveTournamentsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="liveTournamentsModalTitle" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h3 id="liveTournamentsModalTitle">טורנירים פעילים</h3>
+          <button class="modal-close" data-action="close-live-tournaments" aria-label="סגור חלון">×</button>
+        </header>
+        <ul id="liveTournamentsList" class="checklist"></ul>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.feather) feather.replace();
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

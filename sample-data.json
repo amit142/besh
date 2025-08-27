@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "players": {
+    "plr_a": { "id": "plr_a", "name": "דני" },
+    "plr_b": { "id": "plr_b", "name": "רוני" },
+    "plr_c": { "id": "plr_c", "name": "אייל" },
+    "plr_d": { "id": "plr_d", "name": "גדי" }
+  },
+  "tournaments": [],
+  "settings": { "points": { "win": 1, "mars": 2 } },
+  "activeTournamentId": null
+}
