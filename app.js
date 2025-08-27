@@ -140,7 +140,7 @@ async function loadDataFromServer() {
 
 async function autoSaveIfPossible() {
   try {
-    const response = await fetch('/save-data', {
+    const response = await fetch('/api/save-data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
