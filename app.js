@@ -67,16 +67,86 @@ function bindUI() {
 
   // Override forms
   qs('#formAddPlayer').addEventListener('submit', onAddPlayer);
+  
+  // Tournament type change handler
+  const tournamentTypeInputs = tournamentModal.querySelectorAll('input[name="type"]');
+  const customOptions = qs('#customTournamentOptions');
+  const pointsSystemSelect = qs('#pointsSystem');
+  const customPointsSettings = qs('#customPointsSettings');
+  
+  tournamentTypeInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.value === 'custom') {
+        customOptions.classList.remove('hidden');
+      } else {
+        customOptions.classList.add('hidden');
+      }
+    });
+  });
+  
+  if (pointsSystemSelect) {
+    pointsSystemSelect.addEventListener('change', () => {
+      if (pointsSystemSelect.value === 'custom') {
+        customPointsSettings.classList.remove('hidden');
+      } else {
+        customPointsSettings.classList.add('hidden');
+      }
+    });
+  }
+
   qs('#formNewTournament').addEventListener('submit', e => {
     e.preventDefault();
     const name = qs('#tournamentName').value.trim();
     const type = qs('input[name="type"]:checked', tournamentModal).value;
     const participants = [...participantsList.querySelectorAll('input:checked')].map(i=>i.value);
     if (participants.length < 2) { alert('נדרשים לפחות שני שחקנים'); return; }
+    
     const id = genId('tmt');
-    const t = { id, name, type, participants, createdAt: new Date().toISOString(), status:'active', rounds:[], bracket:null, standings:[] };
-    generateSchedule(t);
-    data.tournaments.push(t);
+    const tournament = { 
+      id, 
+      name, 
+      type, 
+      participants, 
+      createdAt: new Date().toISOString(), 
+      status:'active', 
+      rounds:[], 
+      bracket:null, 
+      standings:[] 
+    };
+    
+    // Handle custom tournament settings
+    if (type === 'custom') {
+      tournament.customSettings = {
+        enableHomeAway: qs('#enableHomeAway').checked,
+        customRounds: parseInt(qs('#customRounds').value) || 1,
+        allowDraws: qs('#allowDraws').checked,
+        pointsSystem: qs('#pointsSystem').value
+      };
+      
+      // Set custom points if specified
+      if (tournament.customSettings.pointsSystem === 'custom') {
+        tournament.customSettings.points = {
+          win: parseInt(qs('#winPoints').value) || 1,
+          mars: parseInt(qs('#marsPoints').value) || 2,
+          draw: parseInt(qs('#drawPoints').value) || 1
+        };
+      } else if (tournament.customSettings.pointsSystem === 'football') {
+        tournament.customSettings.points = {
+          win: 3,
+          mars: 3,
+          draw: 1
+        };
+      } else {
+        tournament.customSettings.points = {
+          win: 1,
+          mars: 2,
+          draw: 0
+        };
+      }
+    }
+    
+    generateSchedule(tournament);
+    data.tournaments.push(tournament);
     data.activeTournamentId = id;
     afterDataChange();
     tournamentModal.classList.remove('active');
@@ -249,6 +319,7 @@ function generateSchedule(t) {
   if (t.type === 'round_robin') return generateRoundRobin(t);
   if (t.type === 'single_elim') return generateSingleElim(t);
   if (t.type === 'double_elim') return generateDoubleElim(t);
+  if (t.type === 'custom') return generateCustomTournament(t);
 }
 
 function generateRoundRobin(t) {
@@ -312,6 +383,62 @@ function generateDoubleElim(t) {
   t.bracket.finalMatch = null;
 }
 
+function generateCustomTournament(t) {
+  const settings = t.customSettings;
+  const players = [...t.participants];
+  const numRounds = settings.customRounds;
+  
+  // Generate round-robin style matches for the number of rounds specified
+  if (players.length % 2 === 1) players.push(null); // Add bye if odd number
+  const n = players.length;
+  const matchesPerRound = Math.floor(n / 2);
+  
+  for (let round = 0; round < numRounds; round++) {
+    const roundMatches = [];
+    
+    // Create all possible pairings for this round
+    for (let r = 0; r < n - 1; r++) {
+      const matches = [];
+      for (let i = 0; i < matchesPerRound; i++) {
+        const p1 = players[i];
+        const p2 = players[n - 1 - i];
+        if (p1 != null && p2 != null) {
+          const match = newCustomMatch(p1, p2, settings);
+          // Add home/away designation if enabled
+          if (settings.enableHomeAway) {
+            match.homePlayer = p1;
+            match.awayPlayer = p2;
+            match.isHomeAway = true;
+          }
+          matches.push(match);
+        }
+      }
+      roundMatches.push(...matches);
+      // Rotate players for next set of matches (circle method)
+      players.splice(1, 0, players.pop());
+    }
+    
+    t.rounds.push({ 
+      roundNumber: round + 1,
+      matches: roundMatches.slice(0, Math.min(roundMatches.length, players.length * (players.length - 1) / 2))
+    });
+  }
+}
+
+function newCustomMatch(p1, p2, settings) {
+  return { 
+    id: genId('m'), 
+    p1, 
+    p2, 
+    winner: null, 
+    mars: false, 
+    isDraw: false,
+    pointsAwarded: null,
+    allowDraws: settings.allowDraws,
+    pointsSystem: settings.points
+  };
+}
+
 function shuffle(arr) { for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()* (i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 
 // ------------------ עידכון תוצאות ------------------
@@ -332,7 +459,7 @@ function renderActiveTournament() {
   if (liveView) liveView.classList.remove('hidden');
   if (titleEl) titleEl.textContent = `${t.name} (${typeLabel(t.type)})`;
 
-  if (t.type === 'round_robin') {
+  if (t.type === 'round_robin' || t.type === 'custom') {
     if (bracketPanel) bracketPanel.style.display = 'none';
     renderRoundRobinMatches(t);
   } else {
@@ -344,7 +471,7 @@ function renderActiveTournament() {
 }
 
 function typeLabel(type) {
-  return { round_robin: 'ליגה', single_elim: 'נוקאאוט', double_elim: 'נוקאאוט כפול' }[type] || type;
+  return { round_robin: 'ליגה', single_elim: 'נוקאאוט', double_elim: 'נוקאאוט כפול', custom: 'מותאם אישית' }[type] || type;
 }
 
 function renderRoundRobinMatches(t) {
@@ -352,7 +479,7 @@ function renderRoundRobinMatches(t) {
   container.innerHTML = '';
   t.rounds.forEach((r, ri) => {
     r.matches.forEach(m => {
-      if (!m.winner) {
+      if (!m.winner && !m.isDraw) {
         container.appendChild(matchCard(t, m, `מחזור ${ri+1}`));
       }
     });
@@ -379,14 +506,25 @@ function renderElimOpenMatches(t) {
 function matchCard(t, m, label) {
   const div = document.createElement('div');
   div.className = 'match-card';
-  const p1 = playerName(m.p1); const p2 = playerName(m.p2);
+  const p1Name = playerName(m.p1);
+  const p2Name = playerName(m.p2);
+  
+  // Handle home/away display
+  let p1Display = p1Name;
+  let p2Display = p2Name;
+  if (m.isHomeAway) {
+    p1Display = `${p1Name} (בית)`;
+    p2Display = `${p2Name} (חוץ)`;
+  }
+  
   div.innerHTML = `<header>${label}</header>
-    <div class="vs-line"><span>${p1}</span> <span>מול</span> <span>${p2}</span></div>
+    <div class="vs-line"><span>${p1Display}</span> <span>מול</span> <span>${p2Display}</span></div>
     <form class="mt-1 d-flex flex-wrap gap-2 align-items-center" data-match="${m.id}">
-      <label><input type="radio" name="winner-${m.id}" value="${m.p1}" required> <span>${p1}</span></label>
-      <label><input type="radio" name="winner-${m.id}" value="${m.p2}" required> <span>${p2}</span></label>
+      <label><input type="radio" name="winner-${m.id}" value="${m.p1}" required> <span>${p1Name}</span></label>
+      <label><input type="radio" name="winner-${m.id}" value="${m.p2}" required> <span>${p2Name}</span></label>
+      ${m.allowDraws ? `<label><input type="radio" name="winner-${m.id}" value="draw"> <span>תיקו</span></label>` : ''}
       <label class="m-0"><input type="checkbox" id="mars-${m.id}" value="1"> <span>מרס</span></label>
-      <button class="btn-neon secondary" type="submit">עדכן</button>
+      <button class="btn secondary" type="submit">עדכן</button>
     </form>`;
   div.querySelector('form').addEventListener('submit', e => onSubmitMatchResult(e, t, m));
   return div;
@@ -398,11 +536,37 @@ function onSubmitMatchResult(e, t, m) {
   const winner = fd.get(`winner-${m.id}`);
   const mars = e.target.querySelector(`#mars-${m.id}`).checked;
   if (!winner) return;
-  m.winner = winner;
-  m.mars = mars;
-  // ניקוד נשמר לחישוב קל בעתיד
-  const pts = mars ? data.settings.points.mars : data.settings.points.win;
-  m.pointsAwarded = { [winner]: pts };
+  
+  // Handle draw result
+  if (winner === 'draw') {
+    m.isDraw = true;
+    m.winner = null;
+    m.mars = false;
+    
+    // Award draw points if custom tournament
+    if (t.type === 'custom' && t.customSettings) {
+      const drawPoints = t.customSettings.points.draw || 1;
+      m.pointsAwarded = { 
+        [m.p1]: drawPoints, 
+        [m.p2]: drawPoints 
+      };
+    }
+  } else {
+    m.winner = winner;
+    m.mars = mars;
+    m.isDraw = false;
+    
+    // Calculate points based on tournament type
+    let pts;
+    if (t.type === 'custom' && t.customSettings) {
+      pts = mars ? t.customSettings.points.mars : t.customSettings.points.win;
+    } else {
+      pts = mars ? data.settings.points.mars : data.settings.points.win;
+    }
+    
+    m.pointsAwarded = { [winner]: pts };
+  }
+  
   propagateElimAdvance(t, m);
   afterDataChange();
 }
@@ -446,6 +610,7 @@ function renderScoreboard(t) {
     <td class="clickable player-link">${r.name}</td>
     <td data-k="wins">${r.wins}</td>
     <td data-k="losses">${r.losses}</td>
+    <td data-k="draws">${r.draws || 0}</td>
     <td data-k="marsWins">${r.marsWins}</td>
     <td data-k="points">${r.points}</td>
   </tr>`).join('');
@@ -483,21 +648,56 @@ function onSortScoreboard(e) {
 
 function computeTournamentStats(t) {
   const stats = {};
-  t.participants.forEach(pid => stats[pid] = { id: pid, name: playerName(pid), wins:0, losses:0, marsWins:0, points:0 });
+  t.participants.forEach(pid => stats[pid] = { 
+    id: pid, 
+    name: playerName(pid), 
+    wins:0, 
+    losses:0, 
+    draws:0, 
+    marsWins:0, 
+    points:0 
+  });
+  
   const registerMatch = (m) => {
-    if (!m.winner) return;
-    const loser = m.p1 === m.winner ? m.p2 : m.p1;
-    if (!stats[m.winner]) stats[m.winner] = { id:m.winner, name:playerName(m.winner), wins:0, losses:0, marsWins:0, points:0 };
-    if (!stats[loser]) stats[loser] = { id:loser, name:playerName(loser), wins:0, losses:0, marsWins:0, points:0 };
-    stats[m.winner].wins++;
-    if (m.mars) stats[m.winner].marsWins++;
-    stats[m.winner].points += m.mars? data.settings.points.mars : data.settings.points.win;
-    stats[loser].losses++;
+    if (m.isDraw) {
+      // Handle draw
+      if (stats[m.p1]) stats[m.p1].draws++;
+      if (stats[m.p2]) stats[m.p2].draws++;
+      
+      // Add draw points
+      if (m.pointsAwarded) {
+        if (stats[m.p1] && m.pointsAwarded[m.p1]) {
+          stats[m.p1].points += m.pointsAwarded[m.p1];
+        }
+        if (stats[m.p2] && m.pointsAwarded[m.p2]) {
+          stats[m.p2].points += m.pointsAwarded[m.p2];
+        }
+      }
+    } else if (m.winner) {
+      // Handle win/loss
+      const loser = m.p1 === m.winner ? m.p2 : m.p1;
+      if (!stats[m.winner]) stats[m.winner] = { id:m.winner, name:playerName(m.winner), wins:0, losses:0, draws:0, marsWins:0, points:0 };
+      if (!stats[loser]) stats[loser] = { id:loser, name:playerName(loser), wins:0, losses:0, draws:0, marsWins:0, points:0 };
+      
+      stats[m.winner].wins++;
+      if (m.mars) stats[m.winner].marsWins++;
+      stats[loser].losses++;
+      
+      // Add win points
+      if (m.pointsAwarded && m.pointsAwarded[m.winner]) {
+        stats[m.winner].points += m.pointsAwarded[m.winner];
+      } else {
+        // Fallback to default points
+        const pts = m.mars ? (t.customSettings?.points?.mars || data.settings.points.mars) : (t.customSettings?.points?.win || data.settings.points.win);
+        stats[m.winner].points += pts;
+      }
+    }
   };
-  if (t.type === 'round_robin') {
+  
+  if (t.type === 'round_robin' || t.type === 'custom') {
     t.rounds.forEach(r => r.matches.forEach(registerMatch));
   } else if (t.bracket) {
-    t.bracket.rounds.forEach(r => r.forEach(n => { if (n.p1 && n.p2 && n.winner) registerMatch(n); }));
+    t.bracket.rounds.forEach(r => r.forEach(n => { if (n.p1 && n.p2 && (n.winner || n.isDraw)) registerMatch(n); }));
   }
   return stats;
 }

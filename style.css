@@ -224,6 +224,66 @@ body {
   box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
 }
 
+.radio-group input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+.custom-options {
+  margin-top: var(--spacing);
+  padding: var(--spacing);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: #f9f9f9;
+}
+
+.form-group {
+  margin-bottom: 0.75rem;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.form-group input[type="number"],
+.form-group select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 200px;
+}
+
+.points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.points-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.points-grid label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.points-grid input {
+  max-width: none;
+}
+
 /* Checklist */
 .checklist {
   list-style: none; margin: 0; padding: 0;
@@ -430,6 +490,42 @@ tr.row-updated { animation: rowPulse 1.2s ease-out; }
 .me-1 { margin-inline-end: .25rem !important; }
 .clickable { cursor: pointer; }
 :focus-visible { outline: 3px solid rgba(0, 123, 255, 0.3); outline-offset: 2px; }
+
+/* Draw option styling */
+.draw-option {
+  background: var(--bg-lighter);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.draw-option input[type="radio"]:checked + label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Home/Away indicators */
+.home-away-indicator {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+
+.home-indicator {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.away-indicator {
+  background: #fff3e0;
+  color: #f57c00;
+}
 
 /* Responsive */
 @media (max-width: 960px) {

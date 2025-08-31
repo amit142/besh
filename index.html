@@ -86,6 +86,51 @@
             <label><input type="radio" name="type" value="round_robin" checked /> ליגה</label>
             <label><input type="radio" name="type" value="single_elim" /> נוקאאוט</label>
             <label><input type="radio" name="type" value="double_elim" /> נוקאאוט כפול</label>
+            <label><input type="radio" name="type" value="custom" /> טורניר מותאם אישית</label>
+          </div>
+
+          <!-- Custom Tournament Options -->
+          <div id="customTournamentOptions" class="custom-options hidden">
+            <label>הגדרות טורניר מותאם</label>
+            
+            <div class="form-group">
+              <label><input type="checkbox" id="enableHomeAway"/> הוסף הגדרות בית/חוץ</label>
+            </div>
+            
+            <div class="form-group">
+              <label for="customRounds">מספר מחזורים:</label>
+              <input type="number" id="customRounds" min="1" max="10" value="1"/>
+            </div>
+            
+            <div class="form-group">
+              <label><input type="checkbox" id="allowDraws"/> אפשר תיקו</label>
+            </div>
+            
+            <div class="form-group">
+              <label for="pointsSystem">מערכת ניקוד:</label>
+              <select id="pointsSystem">
+                <option value="standard">רגיל (ניצחון=1, מרס=2)</option>
+                <option value="football">כמו כדורגל (ניצחון=3, תיקו=1)</option>
+                <option value="custom">מותאם אישית</option>
+              </select>
+            </div>
+            
+            <div id="customPointsSettings" class="hidden">
+              <div class="points-grid">
+                <div>
+                  <label for="winPoints">נקודות ניצחון:</label>
+                  <input type="number" id="winPoints" min="0" max="10" value="1"/>
+                </div>
+                <div>
+                  <label for="marsPoints">נקודות מרס:</label>
+                  <input type="number" id="marsPoints" min="0" max="10" value="2"/>
+                </div>
+                <div>
+                  <label for="drawPoints">נקודות תיקו:</label>
+                  <input type="number" id="drawPoints" min="0" max="10" value="1"/>
+                </div>
+              </div>
+            </div>
           </div>
 
           <label>בחר שחקנים</label>
@@ -154,6 +199,7 @@
                 <th data-sort="name">שם</th>
                 <th data-sort="wins">נצחונות</th>
                 <th data-sort="losses">הפסדים</th>
+                <th data-sort="draws">תיקו</th>
                 <th data-sort="marsWins">מרסים</th>
                 <th data-sort="points">נקודות</th>
               </tr>
